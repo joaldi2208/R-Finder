@@ -2,8 +2,8 @@ import numpy as np
 from PIL import Image
 from io import BytesIO
 
-def extend2RGBA(rgb_values): # change name
-    
+def convert2greyscale(rgb_values): # change name
+    """creates greyscale values from rgb values"""    
     images = []
     for index, rgbs in enumerate(rgb_values):
         stream = BytesIO()
