@@ -15,7 +15,7 @@ from decimer_segmentation import apply_masks
 from decimer_segmentation import save_images
 
 def decimerConnection(paper_as_tiff):
-    """sdfsd"""
+    """uses decimer segmentation to find the area on the page where the structures are"""
     
     all_bboxes = []
     all_segments = []
@@ -34,8 +34,8 @@ def decimerConnection(paper_as_tiff):
 
 
 
-def getCenterDecimerMatch(all_bboxes): # eigentlich nur bboxes mit R drin
-    """get the center friend."""
+def getCenterDecimerMatch(all_bboxes): 
+    """calculates the center point of the structure. Needed later on to find the the R-Group and its corresponding structure"""
     
     cP = []
     for bboxes in all_bboxes:
@@ -53,7 +53,7 @@ def getCenterDecimerMatch(all_bboxes): # eigentlich nur bboxes mit R drin
 
 
 def connectRGroup2Structure(loc_structures, loc_RGroups):
-    """connect."""
+    """based on the position of the structure (decimer) and the R-Group (tesseract) pairs of R-Group and structure with the smallest distance are formed"""
 
     structure_RGroup_pairs_ = []
     for r_index, r_loc in enumerate(loc_RGroups):
