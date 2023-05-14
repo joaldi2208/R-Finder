@@ -43,7 +43,7 @@ from decimer_connection import decimerConnection
 from decimer_connection import connectRGroup2Structure
 from decimer_connection import getCenterDecimerMatch
 
-from predictor_connection import extend2RGBA
+from predictor_connection import convert2greyscale
 
 def pdf2tiff(path: str, filename: str) -> List:
     """Convert .pdf to .tiff."""
@@ -121,6 +121,7 @@ def utf2ascii(unicode_string: str) -> str:
 
 
 def REGEXmatching(ocr_text, regex_R_Group):
+    """find R-Group definitions by using a REGEX formula."""
     matched_by_regex = regex_R_Group.finditer(ocr_text)
 
     match_strings = []
@@ -137,7 +138,7 @@ def REGEXmatching(ocr_text, regex_R_Group):
     return match_strings, match_locations, match_in_text
 
 def processREGEXMatch(match_strings, match_in_text):
-    
+    """separates R-Sign from R-Group definition and splits up if more than one R-Group is defined""" 
     R_signs_ = []
     R_groups_ = []
     groups_ = []
@@ -153,7 +154,7 @@ def processREGEXMatch(match_strings, match_in_text):
 
 
 def fromLocation2Index(text):
-
+    """based on the matched index the location of the R-Group match is found"""
     ind_loc_tab = {}
     location = 0
     for n_word, word in enumerate(text):
@@ -171,6 +172,7 @@ def fromLocation2Index(text):
 
 
 def isMatch(metadata, match_locations, index2location_table):
+    """tags matches and no matches with a true or false value, to store it in a df and to find it easily"""
     is_match = False
     true_false_values = []
     n_match = []
@@ -200,22 +202,9 @@ def isMatch(metadata, match_locations, index2location_table):
 
 
 
-def getIndexMatches(match_locations, index2location_table):
-    true_false_values = []
-    index_matches = []
-    for start_loc, end_loc in match_locations:
-        middle_loc = int((start_loc + end_loc) / 2) 
-        for index_word, location_char in index2location_table.items():
-            if middle_loc in location_char:
-                index_matches.append(index_word)
-                true_false_values.append(True)
-            else:
-                true_false_values.append(False)
-
-    return index_matches, true_false_values
 
 def getRCoordinates2(match_locations, x_coord, y_coord, words):
-    
+    """coordinates for the R-Group"""    
     match_coord = list(map(lambda i: (x_coord[i], y_coord[i]), match_locations))
     match = list(map(lambda i: words[i], match_locations)) # test it these coordinates are correct
 
@@ -245,7 +234,7 @@ def filterInvalidMatches(match_strings, match_locations):
     
 
 def str2smiles(R_replacements):
-    """sdfsf"""
+    """checks if str found as R-Group is present in a smiles-common name table and if so it is replaced"""
 
     with open("../data/string_smiles.json", "r") as readfile:
         string_smiles_dict = json.load(readfile)
@@ -268,7 +257,7 @@ def str2smiles(R_replacements):
 
 
 def insertRinSMILES(R_signs_, R_groups_, S_R_pairs, blabla):
-    """Wow"""
+    """inserts the R-Group into the SMILES given by a model that predicts smiles for the found structure"""
 
     new_smiles = []
     for pair in S_R_pairs:
@@ -289,7 +278,7 @@ def insertRinSMILES(R_signs_, R_groups_, S_R_pairs, blabla):
 
 
 def showMatches(centerPoints_line, tiff, centerPoints_structures=None, bboxes=None):
-    """plot the r."""
+    """plots the current journal page and marks the structures and found R-Groups as well as the an the connection between them based on the distance between all structures and the R-Group through an arrow"""
     
     fig = plt.figure(figsize=(8.27,11.69))
     ax = fig.add_subplot(111)
@@ -329,9 +318,10 @@ def showMatches(centerPoints_line, tiff, centerPoints_structures=None, bboxes=No
 
 
 def getPredictedSMILES(all_segments):
+    """predict smiles for found structure"""
     prediis = []
     for i, segments in enumerate(all_segments):
-        images = extend2RGBA(segments)
+        images = convert2greyscale(segments)
 
         predictions_SMI = []
         for img in images:
@@ -341,7 +331,9 @@ def getPredictedSMILES(all_segments):
         prediis.append(predictions_SMI)
     return prediis
 
+
 def createMetadata(image_metadata, grouped_metadata):
+    """create metadata like the position of the R-Groups."""
     metadatas_ = []
     for n_page, center in enumerate(image_metadata["center_point"]):
         if center != [] and (n_page+1) in list((grouped_metadata["page_num"]).astype(int)):
@@ -367,6 +359,7 @@ def createMetadata(image_metadata, grouped_metadata):
 
 
 def getMolSMILES(image_metadata, metadatas_, page, i):
+    """predict smiles for structure image and stores it in the metadata df"""
     pred_smiles_ = image_metadata["pred_SMILES"][page-1]
     try: 
         for i9, ref in enumerate(metadatas_[i]["image_ref"]):
@@ -386,15 +379,17 @@ def getMolSMILES(image_metadata, metadatas_, page, i):
         return None
 
 def createImageMetadata(paper_as_tiff, all_bboxes, all_segments, prediis, centerPoints_structures):
-        image_metadata = pd.DataFrame({"tiff" : paper_as_tiff,
-                                       "bboxes" : all_bboxes,
-                                       "segments" : all_segments
-                                         }) 
-        image_metadata["pred_SMILES"] = prediis 
-        image_metadata["center_point"] = centerPoints_structures 
-        return image_metadata
+    """ creates metadata fro the image (structure)"""
+    image_metadata = pd.DataFrame({"tiff" : paper_as_tiff,
+                                   "bboxes" : all_bboxes,
+                                   "segments" : all_segments
+                                     }) 
+    image_metadata["pred_SMILES"] = prediis 
+    image_metadata["center_point"] = centerPoints_structures 
+    return image_metadata
 
 def get_REGEX_matches(metadata, R_groups_, R_signs_):
+    """fills metadata df with R-signs and R-smiles for the matches"""
     matches_metadata = metadata.loc[metadata["is_match"] == True]
     matches_metadata = matches_metadata.applymap(str)
     grouped_metadata = matches_metadata.groupby("n_match", as_index=False, sort=False).agg({"level" : "first", "page_num": "first", "block_num": "first", "par_num": "first", "line_num": "first", "word_num": "first", "left": "first", "top": "first", "width": "first", "height": "first", "conf": "first", "text": "first", "is_match": "first"})
@@ -404,6 +399,7 @@ def get_REGEX_matches(metadata, R_groups_, R_signs_):
     return grouped_metadata
 
 def getImageData(image_metadata, metadatas_, page, i):
+    """get the image data for the plotting of the current journal page and the needed position information on the page"""
     tiff = image_metadata["tiff"][page-1]
     x_coord = metadatas_[i].left.astype(float)
     y_coord = metadatas_[i].top.astype(float)
