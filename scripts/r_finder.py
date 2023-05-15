@@ -144,8 +144,8 @@ def processREGEXMatch(match_strings, match_in_text):
     groups_ = []
     for txt in match_in_text:
         groups = re.split("=|:", txt) # no spaces anymore
-        R_groups_.append(groups[-1])
-        R_signs_.append(groups[:-1])
+        R_groups_.append(groups[-1][0].strip())
+        R_signs_.append([group.strip() for group in groups[:-1]])
 
     #print(groups)
     #print(R_groups_)
@@ -371,7 +371,7 @@ def getMolSMILES(image_metadata, metadatas_, page, i):
                 print(pred_smiles_[ref])
                 print(R_sign)
                 pred_smiles_[ref] = pred_smiles_[ref].replace(f"[{R_sign}]", metadatas_[i]["R_SMILES"][i9]) # Achtung hier überschreibst du etwas
-            print(pred_smiles_[ref])
+            print("Neu: ", pred_smiles_[ref])
             print("-------------------------")
         return pred_smiles_
     except IndexError:
@@ -414,7 +414,7 @@ def main():
     regex_R_Group = re.compile("\d*(?<=[\d ,])(\ *[RXY][0-9 '’]*,?)+[=:]\ *([^\s,;:]+)(((?=,|\ and|\ or),|\ and|\ or)\ ?(?![RXY])[^\s,;:]+)*")
     regex_R_Group = re.compile("(?<=[\d ,])([RXY][0-9 '’]*,?)+[=:]\ *([^\s,;.:]+)(((?=,|\ and|\ or),|\ and|\ or)\ ?(?![RXY])[^\s,;.:]+)*") # without number at the beginning and delete space at the beginning
     
-    paper_as_tiff = pdf2tiff(path="../data/PHYTOCH/", filename="1-s2.0-S1874390018304543-main.pdf")
+    paper_as_tiff = pdf2tiff(path="../data/PHYTOCH/", filename="synthesis/1-s2.0-S0031942204002882-main.pdf")
     metadata = getMetadata4tiff(paper_as_tiff)
 
     ## function calls
