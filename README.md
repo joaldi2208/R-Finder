@@ -8,6 +8,9 @@
 
 ## Installation
 - To use R=Finder ... it is very complex because of tensorflow dependencies... git pull ... TODO
+- Set up a conda environment:
+    `conda create --name r_finder`
+- pip install -r requirements.txt
 
 ## Mechanism
 

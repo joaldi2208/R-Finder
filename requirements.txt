@@ -1,0 +1,5 @@
+decimer-segmentation
+git+https://github.com/Kohulan/DECIMER-Image_Transformer
+pytesseract
+rich
+pyfiglet

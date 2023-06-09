@@ -30,9 +30,11 @@ from pdf2image import convert_from_path
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
+import shutil
+
 from decimer_segmentation import get_mrcnn_results
 sys.path.append("/Users/jonasdietrich/University/DECIMER/R-Group-Detection/DECIMER_R_Model_Jonas")
-from Predictor_exported_R import predict_SMILES
+from DECIMER import predict_SMILES
 
 from typing import List, Tuple, Dict
 from rich.progress import track
@@ -45,6 +47,8 @@ from decimer_connection import getCenterDecimerMatch
 
 from predictor_connection import convert2greyscale
 
+
+
 def pdf2tiff(path: str, filename: str) -> List:
     """Convert .pdf to .tiff."""
 
@@ -53,10 +57,28 @@ def pdf2tiff(path: str, filename: str) -> List:
     return paper_as_tiff
 
 
+def copy_tessseract_model():
+    """
+    Copy the trained model to the tessdata folder.
+
+    Raises: IOError: If we can't write to tessdata folder
+    """
+    tessdata_path = os.path.abspath(os.environ["TESSDATA_PREFIX"])
+    script_dir = os.path.split(os.path.abspath(__file__))[-1]
+    model_dir = os.path.join(script_dir,
+                             '../data/tessdata/eng_chem0.708_105095.traineddata')
+    if not os.path.exists(os.path.join(tessdata_path, model_dir)):
+        os.makedirs(os.path.join(tessdata_path, model_dir))
+        shutil.copyfile(model_dir, os.path.join(tessdata_path,
+                                                'eng_chem0.708_105095.traineddata'))
+
 
 def getMetadata4tiff(paper_as_tiff: List) -> Dict:
     """Creates a dictionary with meta data for each page."""
-
+    # copy_tessseract_model()
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    model_dir = base_dir + "/data/tessdata"
+    os.environ["TESSDATA_PREFIX"] = os.path.abspath(model_dir)
     metadata = pd.DataFrame(columns=["level", "page_num", "block_num", "par_num", "line_num", "word_num", "left", "top", "width", "height", "conf", "text"])
 
     for i, page in enumerate(track(paper_as_tiff, description="Load pages...")):
