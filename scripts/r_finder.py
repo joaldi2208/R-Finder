@@ -10,43 +10,31 @@ email: jonas.dietrich@uni-jena.de
 
 """
 
-from tensorflow.python.util import deprecation
-deprecation._PRINT_DEPRECATION_WARNINGS = False
-import os
-import tensorflow as tf
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
-import sys
-
-import re
+from DECIMER import predict_SMILES
 import json
 import pandas as pd
-import numpy as np
-
-from collections import OrderedDict
-
-import pytesseract as tess
-from pdf2image import convert_from_path
 import matplotlib.pyplot as plt
-import matplotlib as mpl
-
-import shutil
-
-from decimer_segmentation import get_mrcnn_results
-sys.path.append("/Users/jonasdietrich/University/DECIMER/R-Group-Detection/DECIMER_R_Model_Jonas")
-from DECIMER import predict_SMILES
-
-from typing import List, Tuple, Dict
+import numpy as np
+import os
+from pdf2image import convert_from_path
+import pyfiglet
+import pytesseract as tess
+import re
 from rich.progress import track
 from rich import print
-import pyfiglet
+import sys
+from tensorflow.python.util import deprecation
+from typing import List, Dict
+
+sys.path.append("/Users/jonasdietrich/University/DECIMER/R-Group-Detection/DECIMER_R_Model_Jonas")
 
 from decimer_connection import decimerConnection
 from decimer_connection import connectRGroup2Structure
 from decimer_connection import getCenterDecimerMatch
-
 from predictor_connection import convert2greyscale
 
+deprecation._PRINT_DEPRECATION_WARNINGS = False
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
 def pdf2tiff(path: str, filename: str) -> List:
@@ -55,22 +43,6 @@ def pdf2tiff(path: str, filename: str) -> List:
     paper_as_tiff = convert_from_path(path + "/" + filename, fmt="TIFF")
 
     return paper_as_tiff
-
-
-def copy_tessseract_model():
-    """
-    Copy the trained model to the tessdata folder.
-
-    Raises: IOError: If we can't write to tessdata folder
-    """
-    tessdata_path = os.path.abspath(os.environ["TESSDATA_PREFIX"])
-    script_dir = os.path.split(os.path.abspath(__file__))[-1]
-    model_dir = os.path.join(script_dir,
-                             '../data/tessdata/eng_chem0.708_105095.traineddata')
-    if not os.path.exists(os.path.join(tessdata_path, model_dir)):
-        os.makedirs(os.path.join(tessdata_path, model_dir))
-        shutil.copyfile(model_dir, os.path.join(tessdata_path,
-                                                'eng_chem0.708_105095.traineddata'))
 
 
 def getMetadata4tiff(paper_as_tiff: List) -> Dict:
@@ -91,11 +63,8 @@ def getMetadata4tiff(paper_as_tiff: List) -> Dict:
         ocr_result_with_text = ocr_result_with_text.loc[ocr_result_del_nan["text"] != "    "]
         ocr_result_with_text["text"] = list(map(lambda x: x.replace(" ", ""), ocr_result_with_text["text"]))
         next_page = ocr_result_del_nan.loc[ocr_result_del_nan["text"] != " "] # new, no space in join needed anymore
-        metadata = pd.concat([metadata, ocr_result_with_text], axis=0, ignore_index=True)
-        
+        metadata = pd.concat([metadata, ocr_result_with_text], axis=0, ignore_index=True)  
     metadata["text"] = metadata["text"].apply(utf2ascii)
-    
-
     return metadata
 
 
@@ -141,7 +110,6 @@ def utf2ascii(unicode_string: str) -> str:
     return unicode_string
 
 
-
 def REGEXmatching(ocr_text, regex_R_Group):
     """find R-Group definitions by using a REGEX formula."""
     matched_by_regex = regex_R_Group.finditer(ocr_text)
@@ -158,6 +126,7 @@ def REGEXmatching(ocr_text, regex_R_Group):
         match_in_text.append(ocr_text[start:end])
 
     return match_strings, match_locations, match_in_text
+
 
 def processREGEXMatch(match_strings, match_in_text):
     """separates R-Sign from R-Group definition and splits up if more than one R-Group is defined""" 
@@ -184,13 +153,9 @@ def fromLocation2Index(text):
         for char in word:
             catched_location.append(location)
             location += 1
-        
-
         ind_loc_tab[n_word] = catched_location.copy()
         location += 1
-
     return ind_loc_tab
-
 
 
 def isMatch(metadata, match_locations, index2location_table):
@@ -202,7 +167,7 @@ def isMatch(metadata, match_locations, index2location_table):
     for start_loc, end_loc in match_locations:
         regex_span = list(range(start_loc, end_loc))
         match_index.append(regex_span)
-    
+
     for index_word, location_char in index2location_table.items():
         n_match_list = 0
         for loc in location_char:
@@ -210,9 +175,7 @@ def isMatch(metadata, match_locations, index2location_table):
                 if loc in match_index[i]:
                     is_match = True
                     n_match_list = i
-
-
-        
+    
         true_false_values.append(is_match)
         n_match.append(n_match_list)
         is_match = False
@@ -223,15 +186,12 @@ def isMatch(metadata, match_locations, index2location_table):
     return metadata
 
 
-
-
 def getRCoordinates2(match_locations, x_coord, y_coord, words):
     """coordinates for the R-Group"""    
     match_coord = list(map(lambda i: (x_coord[i], y_coord[i]), match_locations))
     match = list(map(lambda i: words[i], match_locations)) # test it these coordinates are correct
 
     return match_coord, match
-
 
 
 def filterInvalidMatches(match_strings, match_locations):
@@ -250,10 +210,8 @@ def filterInvalidMatches(match_strings, match_locations):
         del match_strings[index]
         del match_locations[index]
 
-    
     return match_strings, match_locations
 
-    
 
 def str2smiles(R_replacements):
     """checks if str found as R-Group is present in a smiles-common name table and if so it is replaced"""
@@ -271,7 +229,6 @@ def str2smiles(R_replacements):
 
             else:
                 r_as_smiles = R_group
-            
         R_SMILES.append(r_as_smiles)
 
     #    return r_as_smiles
@@ -301,7 +258,7 @@ def insertRinSMILES(R_signs_, R_groups_, S_R_pairs, blabla):
 
 def showMatches(centerPoints_line, tiff, centerPoints_structures=None, bboxes=None):
     """plots the current journal page and marks the structures and found R-Groups as well as the an the connection between them based on the distance between all structures and the R-Group through an arrow"""
-    
+
     fig = plt.figure(figsize=(8.27,11.69))
     ax = fig.add_subplot(111)
     ax.imshow(tiff)
@@ -400,6 +357,7 @@ def getMolSMILES(image_metadata, metadatas_, page, i):
         print("hier fehler!!!!!!!!!!!!!!!!!!!!!!")
         return None
 
+
 def createImageMetadata(paper_as_tiff, all_bboxes, all_segments, prediis, centerPoints_structures):
     """ creates metadata fro the image (structure)"""
     image_metadata = pd.DataFrame({"tiff" : paper_as_tiff,
@@ -409,6 +367,7 @@ def createImageMetadata(paper_as_tiff, all_bboxes, all_segments, prediis, center
     image_metadata["pred_SMILES"] = prediis 
     image_metadata["center_point"] = centerPoints_structures 
     return image_metadata
+
 
 def get_REGEX_matches(metadata, R_groups_, R_signs_):
     """fills metadata df with R-signs and R-smiles for the matches"""
@@ -420,6 +379,7 @@ def get_REGEX_matches(metadata, R_groups_, R_signs_):
     grouped_metadata["R_SMILES"] = R_SMILES
     return grouped_metadata
 
+
 def getImageData(image_metadata, metadatas_, page, i):
     """get the image data for the plotting of the current journal page and the needed position information on the page"""
     tiff = image_metadata["tiff"][page-1]
@@ -429,13 +389,13 @@ def getImageData(image_metadata, metadatas_, page, i):
     centerPoints_structures = list(metadatas_[i]["center_image"])  
     bboxes = image_metadata["bboxes"][page]
     return tiff, match_coord, centerPoints_structures, bboxes
-    
+
 
 def main():
 
     regex_R_Group = re.compile("\d*(?<=[\d ,])(\ *[RXY][0-9 '’]*,?)+[=:]\ *([^\s,;:]+)(((?=,|\ and|\ or),|\ and|\ or)\ ?(?![RXY])[^\s,;:]+)*")
     regex_R_Group = re.compile("(?<=[\d ,])([RXY][0-9 '’]*,?)+[=:]\ *([^\s,;.:]+)(((?=,|\ and|\ or),|\ and|\ or)\ ?(?![RXY])[^\s,;.:]+)*") # without number at the beginning and delete space at the beginning
-    
+
     paper_as_tiff = pdf2tiff(path="../data/PHYTOCH/", filename="synthesis/1-s2.0-S0031942204002882-main.pdf")
     metadata = getMetadata4tiff(paper_as_tiff)
 
