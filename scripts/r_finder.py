@@ -133,14 +133,18 @@ def processREGEXMatch(match_strings, match_in_text):
     R_signs_ = []
     R_groups_ = []
     groups_ = []
+    print(match_in_text)
     for txt in match_in_text:
         groups = re.split("=|:", txt) # no spaces anymore
-        R_groups_.append(groups[-1][0].strip())
+        print("here both splited in a list", groups)
+        print(groups[0], groups[1])
+        #R_groups_.append(groups[-1].strip())
+        R_groups_.append(groups[1].strip())
         R_signs_.append([group.strip() for group in groups[:-1]])
 
-    #print(groups)
-    #print(R_groups_)
-    #print(R_signs_)
+        #print(groups)
+        #print(R_groups_)
+        #print(R_signs_)
     return groups_, R_signs_, R_groups_
 
 
@@ -393,7 +397,7 @@ def getImageData(image_metadata, metadatas_, page, i):
 
 def main():
 
-    regex_R_Group = re.compile("\d*(?<=[\d ,])(\ *[RXY][0-9 '’]*,?)+[=:]\ *([^\s,;:]+)(((?=,|\ and|\ or),|\ and|\ or)\ ?(?![RXY])[^\s,;:]+)*")
+    #regex_R_Group = re.compile("\d*(?<=[\d ,])(\ *[RXY][0-9 '’]*,?)+[=:]\ *([^\s,;:]+)(((?=,|\ and|\ or),|\ and|\ or)\ ?(?![RXY])[^\s,;:]+)*")
     regex_R_Group = re.compile("(?<=[\d ,])([RXY][0-9 '’]*,?)+[=:]\ *([^\s,;.:]+)(((?=,|\ and|\ or),|\ and|\ or)\ ?(?![RXY])[^\s,;.:]+)*") # without number at the beginning and delete space at the beginning
 
     paper_as_tiff = pdf2tiff(path="../data/PHYTOCH/", filename="synthesis/1-s2.0-S0031942204002882-main.pdf")
@@ -434,9 +438,9 @@ if __name__ == "__main__":
     title = pyfiglet.figlet_format("R=finder", font = "speed")
     print(f'[green]{title}[/green]')
 
-    main()
 
     #MDPI = ["molecules-05-01429.pdf", "molecules-12-01910.pdf", "molecules-14-02888.pdf", "molecules-17-06317.pdf", "molecules-20-16852.pdf", "molecules-08-00053.pdf", "molecules-14-02016.pdf", "molecules-14-03780.pdf", "molecules-18-06620.pdf", "molecules-21-00748-v2.pdf", "molecules-12-01153.pdf", "molecules-14-02202.pdf", "molecules-15-07313.pdf", "molecules-19-19610.pdf", "molecules-21-00901.pdf", "molecules-12-01679.pdf", "molecules-14-02373.pdf", "molecules-15-09057.pdf", "molecules-20-03898.pdf", "molecules-23-00134-v2.pdf"]
+    main()
     #for filename in MDPI[8:]:
         #paper_as_tiff = pdf2tiff(path="../data/MDPI/", filename=filename)            
         #print("*************")
